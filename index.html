@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Sinjeon Catering Order Form</title>
+<style>
+/* ---------------------------------------------------- */
+/* Global Styles */
+/* ---------------------------------------------------- */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; line-height: 1.6; background-color: #f9f9f9; color: #333; }
+h1 { text-align: center; margin-bottom: 20px; font-size: 1.8em; color: #333; }
+h2 { font-size: 1.4em; color: #222; margin-bottom: 15px; }
+label { font-weight: bold; font-size: 1em; margin-bottom: 5px; display: block; }
+
+/* 🚨 수정된 부분: input[type="checkbox"]를 제외하고 나머지 input, select, textarea에 스타일 적용 */
+input:not([type="checkbox"]), select, textarea { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; font-size: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; appearance: none; -webkit-appearance: none; }
+
+/* 🚨 수정된 부분: 체크박스 스타일 재정의하여 선택 가능하게 함 */
+input[type="checkbox"] {
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    appearance: checkbox !important; 
+    -webkit-appearance: checkbox !important;
+}
+
+.info-section { background-color: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px; }
+
+/* ---------------------------------------------------- */
+/* Select Box Styling */
+/* ---------------------------------------------------- */
+.select-wrapper { position: relative; }
+.select-wrapper::after { content: '▼'; position: absolute; right: 15px; top: 45%; transform: translateY(-50%); pointer-events: none; font-size: 0.8em; color: #666; }
+
+/* ---------------------------------------------------- */
+/* Buttons */
+/* ---------------------------------------------------- */
+button { font-size: 1em; border: none; cursor: pointer; transition: background 0.2s; }
+#confirmBranchBtn { width: 100%; padding: 15px; background-color: #333; color: white; border-radius: 8px; font-size: 1.1em; margin-bottom: 20px; margin-top: -10px; }
+#generatePlattersBtn { padding: 10px 20px; background-color: #4CAF50; color: white; border-radius: 6px; }
+#submitBtn { width: 100%; padding: 15px; background-color: #007bff; color: white; border-radius: 8px; font-size: 1.2em; margin-top: 20px; }
+
+/* ---------------------------------------------------- */
+/* Platter & Item Styles */
+/* ---------------------------------------------------- */
+.platter-instance { background-color: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee; }
+.kimbap-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
+.kimbap-item:last-child { border-bottom: none; }
+.kimbap-item span { flex: 1; font-weight: 500; font-size: 0.95em; padding-right: 10px; }
+.counter-box { display: flex; align-items: center; }
+.counter-box button { width: 35px; height: 35px; border-radius: 50%; background-color: #e0e0e0; font-weight: bold; display: flex; justify-content: center; align-items: center; padding: 0; }
+.counter-box .count { margin: 0 10px; font-weight: bold; min-width: 20px; text-align: center; }
+
+/* ---------------------------------------------------- */
+/* Hidden Sections & Visibility */
+/* ---------------------------------------------------- */
+#dateTimeSection, #platterQuantitySection, #platterContainer, #totalPriceDisplay, #customerInfo, #submitBtn { display: none; }
+
+/* 활성화 클래스 */
+.is-visible { display: block !important; animation: fadeIn 0.5s; }
+.is-flex { display: flex !important; animation: fadeIn 0.5s; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+#platterQuantitySection { 
+    background-color: #e8f5e9; 
+    padding: 20px; 
+    border-radius: 12px; 
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+.platter-count-controls { display: flex; align-items: center; background: white; padding: 5px; border-radius: 8px; }
+.platter-count-controls button { width: 40px; height: 40px; background: #eee; border-radius: 6px; }
+.platter-count-controls span { margin: 0 15px; font-weight: bold; font-size: 1.2em; }
+
+.totalPrice { font-weight: bold; font-size: 1.4em; margin-top: 20px; text-align: right; color: #d9534f; background-color: #fff0f0; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; }
+.surcharge-info { font-size: 0.6em; color: #d9534f; display: block; font-weight: normal; margin-top: 5px; }
+/* 🚨 이 surcharge-info CSS가 가격 아래에 안내 문구를 표시하는 역할을 합니다. */
+
+/* ---------------------------------------------------- */
+/* Mobile Responsive */
+/* ---------------------------------------------------- */
+@media (max-width: 600px) {
+  #platterQuantitySection { flex-direction: column; align-items: stretch; gap: 15px; }
+  .platter-count-controls { justify-content: space-between; width: 100%; }
+  .platter-count-controls button { width: 30%; }
+  #generatePlattersBtn { width: 100%; margin-left: 0; margin-top: 10px; padding: 15px; }
+}
+</style>
+</head>
+<body>
+
+<div class="info-section">
+    <h1>Sinjeon Catering Order</h1>
+    <p style="text-align: center; color: #666; font-size: 0.9em;">VIC Only | Order 24hr in Advance</p>
+</div>
+
+<div id="step1">
+    <label for="branchSelect">1. Select Branch</label>
+    <div class="select-wrapper">
+        <select id="branchSelect">
+            <option value="none">-- Choose Location --</option>
+            <option value="CBD">CBD</option>
+            <option value="NorthMelbourne">North Melbourne</option>
+            <option value="Carnegie">Carnegie</option>
+            <option value="SummerHill">Summer Hill</option>
+            <option value="Hawthorn">Hawthorn</option>
+            <option value="Seddon">Seddon</option>
+        </select>
+    </div>
+    
+    <div id="dateTimeSection">
+        <label for="pickupDate">Pickup Date (Minimum 24h Notice)</label>
+        <input type="date" id="pickupDate" required>
+        
+        <label for="pickupTime">Pickup Time (11:30 AM - 8:45 PM)</label>
+        <div class="select-wrapper">
+            <select id="pickupTime">
+                <option value="none">-- Select Time --</option>
+                </select>
+        </div>
+    </div>
+
+    <button id="confirmBranchBtn">Next Step (Start Order)</button>
+</div>
+
+<div id="platterQuantitySection">
+    <label style="margin:0;">2. Number of Platters</label>
+    <div class="platter-count-controls">
+        <button id="decreasePlatter">-</button>
+        <span id="platterCount">1</span>
+        <button id="increasePlatter">+</button>
+    </div>
+    <button id="generatePlattersBtn">Set Platters &rarr;</button>
+</div>
+
+<div id="platterContainer"></div>
+
+<div class="totalPrice" id="totalPriceDisplay">
+    Total: A$0
+    <span class="surcharge-info" id="surchargeMsg"></span>
+    </div>
+
+<div id="customerInfo">
+    <h2>3. Your Details</h2>
+    <label>Name</label> <input type="text" id="custName" placeholder="Required" required>
+    <label>Phone</label> <input type="text" id="custPhone" placeholder="Required" required>
+    <label>Email</label> <input type="email" id="custEmail" placeholder="Required" required>
+    <label>Notes</label> <textarea id="custNotes" rows="3"></textarea>
+</div>
+
+<button id="submitBtn">Send Order via Email</button>
+
+<script>
+// 요소 가져오기
+const branchSelect = document.getElementById('branchSelect');
+const dateTimeSection = document.getElementById('dateTimeSection');
+const pickupDateInput = document.getElementById('pickupDate');
+const pickupTimeSelect = document.getElementById('pickupTime');
+const confirmBranchBtn = document.getElementById('confirmBranchBtn');
+const platterQuantitySection = document.getElementById('platterQuantitySection');
+const platterCountEl = document.getElementById('platterCount');
+const increasePlatter = document.getElementById('increasePlatter');
+const decreasePlatter = document.getElementById('decreasePlatter');
+const generatePlattersBtn = document.getElementById('generatePlattersBtn');
+const platterContainer = document.getElementById('platterContainer');
+const customerInfo = document.getElementById('customerInfo');
+const submitBtn = document.getElementById('submitBtn');
+const totalPriceDisplay = document.getElementById('totalPriceDisplay');
+const surchargeMsg = document.getElementById('surchargeMsg');
+
+let branch = 'none';
+
+// --- 날짜/시간 초기화 로직 ---
+function initDateTime() {
+    // 1. 날짜 설정: 오늘 + 24시간 이후부터 선택 가능
+    const today = new Date();
+    today.setDate(today.getDate() + 1); 
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    pickupDateInput.min = `${yyyy}-${mm}-${dd}`;
+
+    // 2. 시간 설정: 11:30 ~ 20:45 (15분 단위)
+    let startHour = 11;
+    let startMin = 30;
+    
+    while(true) {
+        if(startHour > 20) break;
+        if(startHour === 20 && startMin > 45) break;
+
+        const h = startHour > 12 ? startHour - 12 : startHour;
+        const ampm = startHour >= 12 ? 'PM' : 'AM';
+        const mStr = String(startMin).padStart(2, '0');
+        const val = `${String(startHour).padStart(2,'0')}:${mStr}`;
+        const txt = `${h}:${mStr} ${ampm}`;
+
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = txt;
+        pickupTimeSelect.appendChild(opt);
+
+        startMin += 15;
+        if(startMin === 60) {
+            startMin = 0;
+            startHour++;
+        }
+    }
+}
+initDateTime(); 
+
+// 지점 선택 시 날짜/시간 섹션 보이기
+branchSelect.addEventListener('change', () => {
+    if(branchSelect.value !== 'none') {
+        dateTimeSection.style.display = 'block';
+        branch = branchSelect.value;
+    } else {
+        dateTimeSection.style.display = 'none';
+        branch = 'none';
+    }
+});
+
+// 🚨 날짜 변경 시 서차지 문구를 업데이트합니다.
+pickupDateInput.addEventListener('change', updateTotal);
+
+// 1. 지점/날짜/시간 확인 버튼
+confirmBranchBtn.addEventListener('click', () => {
+    const dateVal = pickupDateInput.value;
+    const timeVal = pickupTimeSelect.value;
+
+    if (branch === 'none') {
+        alert('Please select a branch.');
+        return;
+    }
+    if (!dateVal) {
+        alert('Please select a pickup date.');
+        return;
+    }
+    if (timeVal === 'none') {
+        alert('Please select a pickup time.');
+        return;
+    }
+    
+    // 강제로 다음 섹션 보이기
+    platterQuantitySection.classList.add('is-flex');
+    
+    setTimeout(() => {
+        platterQuantitySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+
+    // 초기화
+    platterContainer.innerHTML = '';
+    platterContainer.classList.remove('is-visible');
+    customerInfo.classList.remove('is-visible');
+    submitBtn.classList.remove('is-visible');
+    totalPriceDisplay.classList.remove('is-visible');
+    platterCountEl.textContent = '1';
+});
+
+// 플래터 수량 조절
+increasePlatter.addEventListener('click', () => { 
+    let current = parseInt(platterCountEl.textContent);
+    if(current < 20) platterCountEl.textContent = current + 1; 
+});
+decreasePlatter.addEventListener('click', () => { 
+    let current = parseInt(platterCountEl.textContent);
+    if(current > 1) platterCountEl.textContent = current - 1; 
+});
+
+// 2. 플래터 생성 로직
+generatePlattersBtn.addEventListener('click', () => {
+    platterContainer.innerHTML = '';
+    const qty = parseInt(platterCountEl.textContent);
+    
+    for(let i=1; i<=qty; i++) {
+        const div = document.createElement('div');
+        div.className = 'platter-instance';
+        div.innerHTML = `
+            <label style="color:#007bff; margin-bottom:10px;">Platter #${i} Selection</label>
+            <div class="select-wrapper">
+                <select class='platterType'>
+                    <option value='none' data-price='0'>-- Select Type --</option>
+                    <option value='paradise' data-price='55'>Kimbap Paradise ($55)</option>
+                    <option value='kfc' data-price='65'>Kimbap & KFC ($65)</option>
+                    <option value='vego' data-price='65'>Vego Party ($65)</option>
+                </select>
+            </div>
+            <div class='options-area'></div>
+        `;
+        platterContainer.appendChild(div);
+
+        const select = div.querySelector('.platterType');
+        const optionsArea = div.querySelector('.options-area');
+
+        select.addEventListener('change', () => {
+            optionsArea.innerHTML = '';
+            const type = select.value;
+            
+            if(type === 'paradise' || type === 'kfc') {
+                const max = type === 'paradise' ? 5 : 3;
+                optionsArea.innerHTML = `<p style="font-size:0.9em; color:#666; margin:10px 0;">Pick <strong>${max}</strong> Kimbaps:</p>`;
+                
+                let kimbapList = ['Beef Bulgogi (+$1)', 'Sausage/Spam', 'Tuna Mayo', 'Tofu', 'Fried Chicken (+$1)'];
+                
+                kimbapList.forEach(k => {
+                    let displayK = k;
+                    if(k.includes('Sausage/Spam')) {
+                        // 🚨 1차 수정 사항: 지점별 김밥 옵션 변경
+                        if (branch === 'Carnegie' || branch === 'Seddon' || branch === 'Hawthorn') {
+                            displayK = 'Spam Kimbap';
+                        } else if (branch === 'SummerHill') {
+                            displayK = 'Smoke Kimbap';
+                        } else {
+                            displayK = 'Beef Sausage Kimbap';
+                        }
+                        // 🚨 1차 수정 사항 끝
+                    }
+                    
+                    const row = document.createElement('div');
+                    row.className = 'kimbap-item';
+                    row.innerHTML = `
+                        <span>${displayK}</span>
+                        <div class="counter-box">
+                            <button class="minus">-</button>
+                            <span class="count">0</span>
+                            <button class="plus">+</button>
+                        </div>
+                    `;
+                    optionsArea.appendChild(row);
+
+                    const cntEl = row.querySelector('.count');
+                    
+                    row.querySelector('.plus').addEventListener('click', () => {
+                        let currentTotal = 0;
+                        optionsArea.querySelectorAll('.count').forEach(c => currentTotal += parseInt(c.textContent));
+                        
+                        if(currentTotal < max) {
+                            cntEl.textContent = parseInt(cntEl.textContent) + 1;
+                            updateTotal();
+                        } else {
+                            alert(`Max ${max} items allowed.`); 
+                        }
+                    });
+
+                    row.querySelector('.minus').addEventListener('click', () => {
+                        let c = parseInt(cntEl.textContent);
+                        if(c > 0) {
+                            cntEl.textContent = c - 1;
+                            updateTotal();
+                        }
+                    });
+                });
+            }
+
+            if(type === 'kfc') {
+                // 🚨 2차 수정 사항: KFC 소스 선택 옵션을 체크박스 (최대 2개)로 변경
+                const sauceDiv = document.createElement('div');
+                sauceDiv.className = 'sauce-selection-area';
+                sauceDiv.style.marginTop = '15px';
+                sauceDiv.innerHTML = `
+                    <label style="margin-bottom: 5px;">Sauce (Pick up to 2):</label>
+                    <div class="sauce-options" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                        <label style="font-weight:normal; display:inline-flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" class="kfcSauceOption" value="Sweet Chili"> Sweet Chili
+                        </label>
+                        <label style="font-weight:normal; display:inline-flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" class="kfcSauceOption" value="Honey Soy"> Honey Soy
+                        </label>
+                        <label style="font-weight:normal; display:inline-flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" class="kfcSauceOption" value="Plain"> Plain
+                        </label>
+                    </div>
+                `;
+                optionsArea.appendChild(sauceDiv);
+
+                // Add logic to enforce max 2 selections
+                const checkboxes = sauceDiv.querySelectorAll('.kfcSauceOption');
+                checkboxes.forEach(chk => {
+                    chk.addEventListener('change', () => {
+                        let selected = 0;
+                        checkboxes.forEach(c => {
+                            if (c.checked) selected++;
+                        });
+                        if (selected > 2) {
+                            alert("You can select a maximum of 2 sauces.");
+                            chk.checked = false; // Uncheck the one that exceeded the limit
+                        }
+                    });
+                });
+                // 🚨 2차 수정 사항 끝
+            }
+
+            if(type === 'vego') {
+                optionsArea.innerHTML = `
+                    <div style="background:#f4f4f4; padding:10px; border-radius:8px; font-size:0.9em;">
+                        • 3 Tofu Kimbap<br>• 8 Dumplings<br>• 8 Seaweed Rolls<br>• Salad
+                    </div>
+                `;
+            }
+            updateTotal();
+        });
+    }
+
+    // 섹션 보이기
+    platterContainer.classList.add('is-visible');
+    totalPriceDisplay.classList.add('is-visible');
+    customerInfo.classList.add('is-visible');
+    submitBtn.classList.add('is-visible');
+    
+    setTimeout(() => {
+        platterContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    
+    updateTotal();
+});
+
+// --- 🚨 핵심 기능: 가격 계산 및 서차지 문구 업데이트 ---
+function updateTotal() {
+    let baseTotal = 0;
+    
+    // 1. 기본 음식 가격 계산
+    document.querySelectorAll('.platter-instance').forEach(inst => {
+        const sel = inst.querySelector('.platterType');
+        if(sel && sel.value !== 'none') {
+            let p = parseFloat(sel.selectedOptions[0].dataset.price);
+            inst.querySelectorAll('.kimbap-item').forEach(item => {
+                const txt = item.querySelector('span').textContent;
+                const cnt = parseInt(item.querySelector('.count').textContent);
+                if(txt.includes('Beef') || txt.includes('Chicken')) {
+                    p += (cnt * 1);
+                }
+            });
+            baseTotal += p;
+        }
+    });
+
+    // 2. 주말 서차지 계산 및 문구 설정
+    const dateVal = pickupDateInput.value;
+    let surchargeRate = 0;
+    let surchargeText = "";
+
+    if(dateVal) {
+        const dateObj = new Date(dateVal.replace(/-/g, '/')); 
+        const day = dateObj.getDay(); // 0:일, 6:토
+        
+        if(day === 6) { // 토요일
+            surchargeRate = 0.05;
+            surchargeText = "(Includes 5% Saturday Surcharge)";
+        } else if (day === 0) { // 일요일
+            surchargeRate = 0.10;
+            surchargeText = "(Includes 10% Sunday Surcharge)";
+        }
+    }
+
+    const surchargeAmount = baseTotal * surchargeRate;
+    const finalTotal = baseTotal + surchargeAmount;
+
+    // 3. 최종 가격과 서차지 문구를 화면에 표시
+    totalPriceDisplay.innerHTML = `Total: A$${finalTotal.toFixed(2)} <span class="surcharge-info">${surchargeText}</span>`;
+}
+
+// --- 주문 상세 내용을 수집하고 이메일 전송 ---
+function collectOrderDetails() {
+    let orderSummary = "--- SINJEON CATERING ORDER DETAILS ---\n\n";
+
+    // 1. 픽업 및 고객 정보 수집
+    const branch = branchSelect.value;
+    const date = pickupDateInput.value;
+    const timeText = pickupTimeSelect.options[pickupTimeSelect.selectedIndex].text;
+    const name = document.getElementById('custName').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const email = document.getElementById('custEmail').value.trim();
+    const notes = document.getElementById('custNotes').value.trim() || "None";
+    
+    // 필수 정보 확인
+    if (branch === 'none' || !date || pickupTimeSelect.value === 'none' || !name || !phone || !email) {
+        alert("Please fill in all required fields (Branch, Date, Time, Name, Phone, Email)."); 
+        return null;
+    }
+
+    orderSummary += `[1. PICKUP DETAILS]\n`;
+    orderSummary += `Branch: ${branch}\n`;
+    orderSummary += `Date: ${date}\n`;
+    orderSummary += `Time: ${timeText}\n\n`;
+
+    orderSummary += `[2. CUSTOMER DETAILS]\n`;
+    orderSummary += `Name: ${name}\n`;
+    orderSummary += `Phone: ${phone}\n`;
+    orderSummary += `Email: ${email}\n`;
+    orderSummary += `Notes: ${notes}\n\n`;
+
+    // 2. 플래터 상세 내용
+    orderSummary += `[3. PLATTER ORDER (${platterCountEl.textContent} Platters)]\n`;
+    
+    let platterIndex = 1;
+    document.querySelectorAll('.platter-instance').forEach(inst => {
+        const sel = inst.querySelector('.platterType');
+        const platterType = sel.selectedOptions[0].text;
+        const platterValue = sel.value;
+        
+        orderSummary += `--- Platter #${platterIndex} (${platterType}) ---\n`;
+        
+        if (platterValue === 'paradise' || platterValue === 'kfc') {
+            orderSummary += "Kimbap Selection:\n";
+            let kimbapCounted = false;
+            inst.querySelectorAll('.kimbap-item').forEach(item => {
+                const kimbapName = item.querySelector('span').textContent.replace(/\s*(\(\+\$.*?\))\s*/g, ''); 
+                const kimbapCount = parseInt(item.querySelector('.count').textContent);
+                if (kimbapCount > 0) {
+                    orderSummary += `  - ${kimbapName}: ${kimbapCount} units\n`;
+                    kimbapCounted = true;
+                }
+            });
+
+            if (!kimbapCounted && platterValue !== 'none') {
+                orderSummary += "  (Kimbap not selected or count is zero)\n";
+            }
+            
+            if (platterValue === 'kfc') {
+                // 🚨 2차 수정 사항: 체크박스 소스 선택 결과 수집
+                const sauceCheckboxes = inst.querySelectorAll('.kfcSauceOption:checked');
+                let sauces = [];
+                sauceCheckboxes.forEach(chk => sauces.push(chk.value));
+
+                const sauceText = sauces.length > 0 ? sauces.join(', ') : "None Selected";
+                orderSummary += `KFC Sauce (Max 2): ${sauceText}\n`;
+                // 🚨 2차 수정 사항 끝
+            }
+        } else if (platterValue === 'vego') {
+            orderSummary += "Contents: 3 Tofu Kimbap, 8 Dumplings, 8 Seaweed Rolls, Salad\n";
+        } else {
+             orderSummary += "  (Type Not Selected)\n";
+        }
+        orderSummary += "\n";
+        platterIndex++;
+    });
+
+    // 3. 최종 가격
+    const totalPriceText = totalPriceDisplay.textContent.trim();
+    const surchargeText = surchargeMsg.textContent.trim();
+
+    orderSummary += `[4. TOTAL PRICE]\n`;
+    orderSummary += `Final Total: ${totalPriceText}\n`;
+    if (surchargeText) {
+        orderSummary += `Surcharge Info: ${surchargeText}\n`;
+    }
+    
+    return orderSummary;
+}
+
+
+submitBtn.addEventListener('click', () => {
+    const orderDetails = collectOrderDetails();
+    if (!orderDetails) {
+        return; 
+    }
+
+    const recipient = "adm.sinjeon.melb@gmail.com";
+    const subject = encodeURIComponent(`New Catering Order for ${branchSelect.value} - ${pickupDateInput.value}`);
+    const body = encodeURIComponent(orderDetails);
+
+    const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
+    
+    window.location.href = mailtoLink;
+    
+    alert("Your order details have been prepared in your email app. Please send the email to complete the order."); 
+});
+</script>
+
+</body>
+</html>
