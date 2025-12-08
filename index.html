@@ -55,7 +55,7 @@ button { font-size: 1em; border: none; cursor: pointer; transition: background 0
 /* ---------------------------------------------------- */
 /* Hidden Sections & Visibility */
 /* ---------------------------------------------------- */
-#dateTimeSection, #platterQuantitySection, #platterContainer, #totalPriceDisplay, #customerInfo, #submitBtn { display: none; }
+#dateTimeSection, #platterQuantitySection, #platterContainer, #totalPriceDisplay, #customerInfo, #submitBtn, #paymentInfo { display: none; }
 
 /* 활성화 클래스 */
 .is-visible { display: block !important; animation: fadeIn 0.5s; }
@@ -81,6 +81,54 @@ button { font-size: 1em; border: none; cursor: pointer; transition: background 0
 /* 🚨 이 surcharge-info CSS가 가격 아래에 안내 문구를 표시하는 역할을 합니다. */
 
 /* ---------------------------------------------------- */
+/* 🚨 추가된 결제 정보 섹션 스타일 */
+/* ---------------------------------------------------- */
+#paymentInfo {
+    background-color: #f0f8ff;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #b3e5fc;
+    margin-top: 25px;
+    line-height: 1.5;
+}
+#paymentInfo h2 {
+    color: #00796b;
+    border-bottom: 2px solid #00bcd4;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+.bank-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+.bank-table th, .bank-table td {
+    border: 1px solid #ddd;
+    padding: 10px 8px;
+    text-align: left;
+}
+.bank-table th {
+    background-color: #e0f7fa;
+    font-weight: bold;
+    color: #00796b;
+    vertical-align: top;
+}
+.bank-table td {
+    background-color: #fff;
+    word-break: break-all;
+}
+.warning-note {
+    background-color: #ffccbc;
+    color: #d32f2f;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+/* ---------------------------------------------------- */
 /* Mobile Responsive */
 /* ---------------------------------------------------- */
 @media (max-width: 600px) {
@@ -88,6 +136,28 @@ button { font-size: 1em; border: none; cursor: pointer; transition: background 0
   .platter-count-controls { justify-content: space-between; width: 100%; }
   .platter-count-controls button { width: 30%; }
   #generatePlattersBtn { width: 100%; margin-left: 0; margin-top: 10px; padding: 15px; }
+  .bank-table, .bank-table tbody, .bank-table tr, .bank-table td, .bank-table th {
+    display: block;
+    width: 100%;
+  }
+  .bank-table thead { display: none; }
+  .bank-table tr { margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+  .bank-table td {
+    text-align: right;
+    padding-left: 50%;
+    position: relative;
+  }
+  .bank-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 8px;
+    width: calc(50% - 16px);
+    padding-right: 10px;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: bold;
+    color: #00796b;
+  }
 }
 </style>
 </head>
@@ -152,6 +222,53 @@ button { font-size: 1em; border: none; cursor: pointer; transition: background 0
     <label>Notes</label> <textarea id="custNotes" rows="3"></textarea>
 </div>
 
+<div id="paymentInfo">
+    <h2><span style="font-size: 1.2em;">🧾</span> Order and Bank Transfer Information</h2>
+    <p>Dear Customer,</p>
+    <p>For orders of **A$100 or more**, please transfer the full amount to the bank account corresponding to the location you are ordering from.</p>
+
+    <ul style="list-style-type: disc; margin-left: 20px;">
+        <li>**Transfer:** Send the full amount to the relevant account number below.</li>
+        <li>**Email Receipt:** After the transfer, please email your receipt to **adm.sinjeon.melb@gmail.com**.</li>
+    </ul>
+    
+    <p style="font-style: italic; margin-top: 10px;">Your order will be confirmed once we receive and verify the payment.</p>
+
+    <table class="bank-table">
+        <thead>
+            <tr>
+                <th>Store Location</th>
+                <th>Bank Account Name</th>
+                <th>BSB Number</th>
+                <th>Account Number</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td data-label="Store Location">CBD, North Melbourne</td>
+                <td data-label="Bank Account Name">CBA / NEMO2</td>
+                <td data-label="BSB Number">063-023</td>
+                <td data-label="Account Number">1029 7309</td>
+            </tr>
+            <tr>
+                <td data-label="Store Location">Carnegie</td>
+                <td data-label="Bank Account Name">ANZ / Seoul2melb Ptd Lty</td>
+                <td data-label="BSB Number">013-132</td>
+                <td data-label="Account Number">6438 58238</td>
+            </tr>
+            <tr>
+                <td data-label="Store Location">Summer Hill</td>
+                <td data-label="Bank Account Name">CBA / Summer Hill</td>
+                <td data-label="BSB Number">062-692</td>
+                <td data-label="Account Number">8276 2047</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="warning-note">
+        ⚠️ **Note:** If you require account information for other locations not listed above, please contact us via email, and we will reply promptly.
+    </div>
+</div>
 <button id="submitBtn">Send Order via Email</button>
 
 <script>
@@ -171,6 +288,7 @@ const customerInfo = document.getElementById('customerInfo');
 const submitBtn = document.getElementById('submitBtn');
 const totalPriceDisplay = document.getElementById('totalPriceDisplay');
 const surchargeMsg = document.getElementById('surchargeMsg');
+const paymentInfo = document.getElementById('paymentInfo'); // 🚨 추가
 
 let branch = 'none';
 
@@ -254,9 +372,10 @@ confirmBranchBtn.addEventListener('click', () => {
     // 초기화
     platterContainer.innerHTML = '';
     platterContainer.classList.remove('is-visible');
-    customerInfo.classList.remove('is-visible');
-    submitBtn.classList.remove('is-visible');
     totalPriceDisplay.classList.remove('is-visible');
+    customerInfo.classList.remove('is-visible');
+    paymentInfo.classList.remove('is-visible'); // 🚨 추가
+    submitBtn.classList.remove('is-visible');
     platterCountEl.textContent = '1';
 });
 
@@ -408,6 +527,7 @@ generatePlattersBtn.addEventListener('click', () => {
     platterContainer.classList.add('is-visible');
     totalPriceDisplay.classList.add('is-visible');
     customerInfo.classList.add('is-visible');
+    paymentInfo.classList.add('is-visible'); // 🚨 추가
     submitBtn.classList.add('is-visible');
     
     setTimeout(() => {
@@ -443,6 +563,7 @@ function updateTotal() {
     let surchargeText = "";
 
     if(dateVal) {
+        // 날짜 객체를 생성할 때 브라우저 간 일관성을 위해 YYYY/MM/DD 형식으로 변환합니다.
         const dateObj = new Date(dateVal.replace(/-/g, '/')); 
         const day = dateObj.getDay(); // 0:일, 6:토
         
@@ -507,6 +628,7 @@ function collectOrderDetails() {
             orderSummary += "Kimbap Selection:\n";
             let kimbapCounted = false;
             inst.querySelectorAll('.kimbap-item').forEach(item => {
+                // 김밥 이름에서 가격 정보를 제거합니다.
                 const kimbapName = item.querySelector('span').textContent.replace(/\s*(\(\+\$.*?\))\s*/g, ''); 
                 const kimbapCount = parseInt(item.querySelector('.count').textContent);
                 if (kimbapCount > 0) {
@@ -516,6 +638,7 @@ function collectOrderDetails() {
             });
 
             if (!kimbapCounted && platterValue !== 'none') {
+                // 선택했지만 김밥 개수가 0일 경우
                 orderSummary += "  (Kimbap not selected or count is zero)\n";
             }
             
@@ -547,6 +670,11 @@ function collectOrderDetails() {
     if (surchargeText) {
         orderSummary += `Surcharge Info: ${surchargeText}\n`;
     }
+
+    // 4. 결제 안내 정보 추가
+    orderSummary += `\n[5. BANK TRANSFER INSTRUCTIONS]\n`;
+    orderSummary += `Orders A$100+ require bank transfer to the relevant account. Please email the receipt to adm.sinjeon.melb@gmail.com.\n`;
+    orderSummary += `(Bank details listed on the form)\n`;
     
     return orderSummary;
 }
