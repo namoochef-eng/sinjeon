@@ -271,11 +271,6 @@ button { font-size: 1em; border: none; cursor: pointer; transition: background 0
 <button id="submitBtn">Send Order via Email</button>
 
 <script>
-/* --- JavaScript identical to original except no functional changes --- */
-/* (문제 없던 기존 기능 그대로 유지했습니다!) */
-
-/* 모든 JS 코드는 여기서부터 아래 원본 그대로 이어집니다 — 너무 길어서 여기서 생략 없이 모두 넣습니다. */
-
 const branchSelect = document.getElementById('branchSelect');
 const dateTimeSection = document.getElementById('dateTimeSection');
 const pickupDateInput = document.getElementById('pickupDate');
@@ -393,14 +388,18 @@ generatePlattersBtn.addEventListener('click', () => {
 
             if (type === 'paradise' || type === 'kfc') {
                 const max = type === 'paradise' ? 5 : 3;
-                optionsArea.innerHTML = `<p style="font-size:0.9em; color:#666; margin:10px 0;">Pick <strong>${max}</strong> Kimbaps:</p>`;
+                optionsArea.innerHTML = `<p style="font-size:0.9em; color:#666; margin:10px 0;">Pick <strong>${max}</strong> Kimbaps (Must select exactly ${max}):</p>`;
 
                 let list = ['Beef Bulgogi (+$1)', 'Sausage/Spam', 'Tuna Mayo', 'Tofu', 'Fried Chicken (+$1)'];
 
                 list.forEach(k => {
                     let disp = k;
 
+                    // ⭐ [수정됨] CBD, North Melbourne 지점은 Sausage/Spam 항목 제외
                     if (k.includes('Sausage/Spam')) {
+                        if (branch === 'CBD' || branch === 'NorthMelbourne') {
+                            return; // 이 항목은 생성하지 않고 건너뜀
+                        }
                         if (branch === 'Carnegie' || branch === 'Seddon' || branch === 'Hawthorn') disp = 'Spam Kimbap';
                         else if (branch === 'SummerHill') disp = 'Smoke Kimbap';
                         else disp = 'Beef Sausage Kimbap';
@@ -538,7 +537,41 @@ function collectOrderDetails() {
     txt += `[3. PLATTER ORDER (${platterCountEl.textContent} Platters)]\n`;
 
     let idx = 1;
-    document.querySelectorAll('.platter-instance').forEach(inst => {
+    // forEach 안에서 return을 해도 상위 함수가 멈추지 않으므로, 유효성 검사를 위한 플래그 사용
+    let isValid = true;
+
+    // NodeList는 forEach가 break가 안되므로 일반 for문으로 변경하거나, 예외를 던져야 함.
+    // 여기서는 루프를 돌면서 validation check를 먼저 수행
+    const platters = document.querySelectorAll('.platter-instance');
+    
+    // 1차: 유효성 검사 루프
+    for (let i = 0; i < platters.length; i++) {
+        const inst = platters[i];
+        const sel = inst.querySelector('.platterType');
+        const type = sel.value;
+        const currentPlatterIdx = i + 1;
+
+        if (type === 'paradise' || type === 'kfc') {
+            let totalKimbap = 0;
+            inst.querySelectorAll('.kimbap-item').forEach(item => {
+                totalKimbap += parseInt(item.querySelector('.count').textContent);
+            });
+
+            // ⭐ [수정됨] 김밥 파라다이스는 정확히 5개여야 함
+            if (type === 'paradise' && totalKimbap !== 5) {
+                alert(`Platter #${currentPlatterIdx} (Kimbap Paradise): Please select exactly 5 Kimbaps. (Current: ${totalKimbap})`);
+                return null;
+            }
+            // ⭐ [수정됨] 김밥 & KFC는 정확히 3개여야 함
+            if (type === 'kfc' && totalKimbap !== 3) {
+                alert(`Platter #${currentPlatterIdx} (Kimbap & KFC): Please select exactly 3 Kimbaps. (Current: ${totalKimbap})`);
+                return null;
+            }
+        }
+    }
+
+    // 2차: 텍스트 생성 루프 (검사 통과 후)
+    platters.forEach(inst => {
         const sel = inst.querySelector('.platterType');
         const typeText = sel.selectedOptions[0].text;
 
@@ -578,7 +611,7 @@ function collectOrderDetails() {
 
 submitBtn.addEventListener('click', () => {
     const txt = collectOrderDetails();
-    if (!txt) return;
+    if (!txt) return; // 유효성 검사 실패 시(null 반환) 이메일 앱 실행 안 함
 
     const mail = `mailto:adm.sinjeon.melb@gmail.com?subject=${encodeURIComponent(
         "New Catering Order"
